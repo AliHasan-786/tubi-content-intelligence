@@ -1,0 +1,26 @@
+{"query":"90s action thriller with a gritty vibe","expect":{"genres_any":["Action","Thriller"],"year_min":1990,"year_max":1999}}
+{"query":"feel-good family movie night","expect":{"genres_any":["Kids & Family","Animation","Comedy"]}}
+{"query":"dark crime drama","expect":{"genres_any":["Crime","Drama"]}}
+{"query":"romantic drama that's emotional","expect":{"genres_any":["Romance","Drama"]}}
+{"query":"sci-fi adventure with big stakes","expect":{"genres_any":["Sci-Fi","Adventure","Action"]}}
+{"query":"documentary about real life","expect":{"genres_any":["Documentary"]}}
+{"query":"light comedy to relax","expect":{"genres_any":["Comedy"]}}
+{"query":"horror movie for a scary night","expect":{"genres_any":["Horror","Thriller"]}}
+{"query":"classic western","expect":{"genres_any":["Western"]}}
+{"query":"anime action series","expect":{"genres_any":["Anime","Action"]}}
+{"query":"foreign action film","expect":{"genres_any":["Foreign/International","Action"]}}
+{"query":"holiday family movie","expect":{"genres_any":["Holiday","Kids & Family"]}}
+{"query":"mystery thriller","expect":{"genres_any":["Mystery","Thriller"]}}
+{"query":"sports documentary","expect":{"genres_any":["Sport","Documentary"]}}
+{"query":"short movie under 90 minutes comedy","expect":{"genres_any":["Comedy"],"runtime_max":90}}
+{"query":"teen-friendly thriller","expect":{"genres_any":["Thriller"],"ratings_any":["PG-13","TV-14"]}}
+{"query":"kids safe animated show","expect":{"genres_any":["Kids & Family","Animation"],"ratings_any":["TV-Y","TV-Y7","TV-Y7_FV","TV-G","G"]}}
+{"query":"war drama","expect":{"genres_any":["War","Drama"]}}
+{"query":"independent drama","expect":{"genres_any":["Independent","Drama"]}}
+{"query":"reality tv show","expect":{"genres_any":["Reality"]}}
+{"query":"music documentary","expect":{"genres_any":["Music","Documentary"]}}
+{"query":"adventure for the whole family","expect":{"genres_any":["Adventure","Kids & Family"]}}
+{"query":"crime thriller with suspense","expect":{"genres_any":["Crime","Thriller"]}}
+{"query":"romance comedy","expect":{"genres_any":["Romance","Comedy"]}}
+{"query":"classic black-and-white era drama","expect":{"genres_any":["Drama"],"year_max":1965}}
+
