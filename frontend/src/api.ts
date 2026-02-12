@@ -1,6 +1,6 @@
 import type { InsightResponse, SearchRequest, SearchResponse, TelemetrySummary } from "./types";
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
+export const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
 
 async function jsonFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {

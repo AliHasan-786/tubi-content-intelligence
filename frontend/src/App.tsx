@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import type { InsightResponse, MovieResult, SearchFilters, SearchResponse } from "./types";
-import { getInsights, health, search } from "./api";
+import { API_BASE, getInsights, health, search } from "./api";
 
 type TabKey = "search" | "about";
 
@@ -339,17 +339,12 @@ function ResultCard(props: { movie: MovieResult; mode: ViewMode; query: string; 
   const [expanded, setExpanded] = useState(false);
   const [insight, setInsight] = useState<InsightResponse | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
-  const [posterUrl, setPosterUrl] = useState<string | null>(null);
   const [posterError, setPosterError] = useState(false);
 
-  // Fetch poster URL on mount
-  useEffect(() => {
-    if (!m.title_url) return;
-    const url = `http://localhost:8000/api/poster?tubi_url=${encodeURIComponent(m.title_url)}`;
-    fetch(url).then(r => r.json()).then(d => {
-      if (d.poster_url) setPosterUrl(d.poster_url);
-    }).catch(() => { });
-  }, [m.title_url]);
+  // Use the backend image proxy directly — it resolves fresh CDN URLs and streams bytes
+  const posterSrc = m.title_url
+    ? `${API_BASE}/api/poster/image?tubi_url=${encodeURIComponent(m.title_url)}`
+    : null;
 
   const fetchInsight = async () => {
     if (insight) { setExpanded(!expanded); return; }
@@ -366,7 +361,7 @@ function ResultCard(props: { movie: MovieResult; mode: ViewMode; query: string; 
   };
 
   const showCommercial = mode === "revenue" || mode === "blended";
-  const showPoster = posterUrl && !posterError;
+  const showPoster = posterSrc && !posterError;
 
   return (
     <div className={`result-card ${mode === "revenue" ? "card-revenue" : mode === "blended" ? "card-blended" : "card-viewer"}`}>
@@ -375,7 +370,7 @@ function ResultCard(props: { movie: MovieResult; mode: ViewMode; query: string; 
         <span className="poster-rank">#{rank}</span>
         {showPoster ? (
           <img
-            src={posterUrl!}
+            src={posterSrc!}
             alt={m.title}
             className="poster-img"
             onError={() => setPosterError(true)}

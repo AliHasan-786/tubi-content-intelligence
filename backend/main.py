@@ -195,33 +195,69 @@ def api_insights(req: InsightRequest) -> InsightResponse:
     )
 
 
-# ─── Poster resolution (lazy + cached) ────────────────────────────────
+# ─── Poster image proxy (resolves & streams image bytes) ───────────────
 import re as _re
 import requests as _requests
+import time as _time
+from fastapi.responses import Response
 
-_poster_cache: Dict[str, Optional[str]] = {}
-_OG_IMG_RE = _re.compile(r'og:image["\']?\s+content=["\']([^"\']+)', _re.IGNORECASE)
+# TTL cache: {tubi_url: (poster_cdn_url, timestamp)}
+_poster_cache: Dict[str, tuple] = {}
+_POSTER_TTL = 600  # 10 minutes – re-resolve if CDN URL expires
+_OG_IMG_RE = _re.compile(r'property="og:image"\s+content="([^"]+)"', _re.IGNORECASE)
+_OG_IMG_RE2 = _re.compile(r'og:image["\']?\s+content=["\']([^"\']+)', _re.IGNORECASE)
+
+_GOOGLEBOT_UA = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
 
 
-def _resolve_poster(tubi_url: str) -> Optional[str]:
-    """Scrape og:image from a Tubi page. Cached per content ID."""
-    if tubi_url in _poster_cache:
-        return _poster_cache[tubi_url]
+def _resolve_poster_url(tubi_url: str) -> Optional[str]:
+    """Scrape og:image from a Tubi page. Uses Googlebot UA for reliable results."""
+    now = _time.time()
+    cached = _poster_cache.get(tubi_url)
+    if cached and (now - cached[1]) < _POSTER_TTL:
+        return cached[0]
     try:
-        r = _requests.get(tubi_url, timeout=6, headers={"User-Agent": "Mozilla/5.0"})
-        m = _OG_IMG_RE.search(r.text[:20_000])
+        r = _requests.get(tubi_url, timeout=8, headers={"User-Agent": _GOOGLEBOT_UA})
+        m = _OG_IMG_RE.search(r.text[:30_000]) or _OG_IMG_RE2.search(r.text[:30_000])
         url = m.group(1) if m else None
     except Exception:
         url = None
-    _poster_cache[tubi_url] = url
+    _poster_cache[tubi_url] = (url, now)
     return url
 
 
 @app.get("/api/poster")
 def api_poster(tubi_url: str) -> Dict[str, Any]:
-    """Resolve a Tubi URL to its poster image URL."""
-    poster = _resolve_poster(tubi_url)
+    """Resolve a Tubi URL to its poster image URL (JSON)."""
+    poster = _resolve_poster_url(tubi_url)
     return {"tubi_url": tubi_url, "poster_url": poster}
+
+
+@app.get("/api/poster/image")
+def api_poster_image(tubi_url: str) -> Response:
+    """Proxy poster image bytes from Tubi CDN. Avoids CORS and CDN expiry issues."""
+    poster_url = _resolve_poster_url(tubi_url)
+    if not poster_url:
+        return Response(status_code=404, content=b"No poster found")
+    try:
+        r = _requests.get(poster_url, timeout=8, headers={"User-Agent": _GOOGLEBOT_UA})
+        if r.status_code >= 400:
+            # CDN URL expired mid-cache; clear cache and retry once
+            _poster_cache.pop(tubi_url, None)
+            poster_url = _resolve_poster_url(tubi_url)
+            if not poster_url:
+                return Response(status_code=404, content=b"No poster found")
+            r = _requests.get(poster_url, timeout=8, headers={"User-Agent": _GOOGLEBOT_UA})
+            if r.status_code >= 400:
+                return Response(status_code=502, content=b"Poster CDN error")
+        content_type = r.headers.get("content-type", "image/jpeg")
+        return Response(
+            content=r.content,
+            media_type=content_type,
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
+    except Exception:
+        return Response(status_code=502, content=b"Poster fetch failed")
 
 
 @app.get("/api/telemetry/summary", response_model=TelemetrySummary)
